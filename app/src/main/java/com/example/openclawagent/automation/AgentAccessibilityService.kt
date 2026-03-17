@@ -4,24 +4,26 @@ import android.accessibilityservice.AccessibilityService
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import com.example.openclawagent.agent.AgentState
 
 class AgentAccessibilityService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
 
-        // אנחנו נסרוק את המסך רק כשיש שינוי חלון מהותי, כדי לא להציף את הלוגים
-        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-
+        // אנחנו נסרוק את המסך עבור גלילה,פתיחת אפלקציה חדשה,או חלון חדש
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED ||
+            event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
             Log.d("AgentEyes", "--- מתחיל סריקת מסך עבור: ${event.packageName} ---")
 
             // מבקשים מאנדרואיד את ה"שורש" של המסך הנוכחי
             val rootNode = rootInActiveWindow
 
             if (rootNode != null) {
-                // מפעילים את פונקציית הסריקה שלנו
-                printNodeTree(rootNode)
+                val screenBuilder = StringBuilder()
+                extractTextFromTree(rootNode, screenBuilder)
                 rootNode.recycle() // חשוב: משחררים את הזיכרון בסיום
+                AgentState.screen_info = screenBuilder.toString()
             } else {
                 Log.d("AgentEyes", "לא הצלחתי לקרוא את תוכן המסך (ייתכן שזה מסך מאובטח).")
             }
@@ -31,7 +33,7 @@ class AgentAccessibilityService : AccessibilityService() {
     }
 
     // פונקציה רקורסיבית שסורקת את כל האלמנטים על המסך
-    private fun printNodeTree(node: AccessibilityNodeInfo?) {
+    private fun extractTextFromTree(node: AccessibilityNodeInfo?, builder: StringBuilder) {
         if (node == null) return
 
         // מוציאים טקסט (למשל מתוך פסקה) או תיאור (למשל מאייקון של כפתור)
@@ -43,12 +45,14 @@ class AgentAccessibilityService : AccessibilityService() {
         if (!text.isNullOrBlank() || !contentDesc.isNullOrBlank()) {
             val elementInfo = text ?: contentDesc
             val clickableText = if (isClickable) "[לחיץ]" else ""
+
+            builder.append("ראיתי אלמנט: '$elementInfo' $clickableText\n")
             Log.d("AgentEyes", "ראיתי אלמנט: '$elementInfo' $clickableText")
         }
 
         // ממשיכים לסרוק את כל "הילדים" של האלמנט הזה
         for (i in 0 until node.childCount) {
-            printNodeTree(node.getChild(i))
+            extractTextFromTree(node.getChild(i), builder)
         }
     }
 

@@ -31,7 +31,14 @@ class AgentService : Service() {
                     Log.d("AgentService", "--- תחילת מחזור חשיבה ---")
 
                     // שלב 1: state = read_context()
-                    // val state = "כאן נקרא את מה שיש על המסך"
+                    val currentScreenContext = AgentState.screen_info
+                    if (currentScreenContext.isNotBlank()) {
+                        Log.d("AgentBrain", "המוח קיבל את תמונת המסך הבאה:\n$currentScreenContext")
+                    } else {
+                        Log.d("AgentBrain", "המוח לא קיבל מידע חדש מהמסך (המסך ריק או שהעיניים לא סרקו עדיין).")
+                    }
+
+
 
                     // שלב 2: prompt = build_prompt(state)
                     // val prompt = buildPrompt(state)
@@ -48,7 +55,7 @@ class AgentService : Service() {
                     Log.d("AgentService", "מחזור הסתיים. ממתין לפני הפעולה הבאה...")
 
                     // השהייה קלה בין פעולה לפעולה כדי לא לשרוף את הסוללה
-                    delay(3000)
+                    delay(4000)
 
                 } catch (e: Exception) {
                     Log.e("AgentService", "שגיאה בלולאת החשיבה: ${e.message}")
