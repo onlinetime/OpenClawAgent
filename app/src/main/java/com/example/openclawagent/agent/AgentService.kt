@@ -4,6 +4,7 @@ import android.app.Service
 import android.content.Intent
 import android.os.IBinder
 import android.util.Log
+import com.example.openclawagent.automation.AgentAccessibilityService
 import kotlinx.coroutines.*
 
 class AgentService : Service() {
@@ -25,6 +26,7 @@ class AgentService : Service() {
 
     // זוהי הלולאה המרכזית (Agent main loop) מההנחיות
     private fun startReasoningLoop() {
+        var hasPerformedTestClick = false
         serviceScope.launch {
             while (isRunning) {
                 try {
@@ -37,8 +39,29 @@ class AgentService : Service() {
                     } else {
                         Log.d("AgentBrain", "המוח לא קיבל מידע חדש מהמסך (המסך ריק או שהעיניים לא סרקו עדיין).")
                     }
+                    // --- המוח הטיפש (Mock Logic) נכנס לפעולה! ---
 
+                    // נחפש את אפליקציית ההגדרות (אם האמולטור שלך בעברית, שנה ל-"הגדרות")
+                    val targetWord = "Chrome"
 
+                    // אם המילה נמצאת במסך, ועוד לא ביצענו את הלחיצת ניסיון:
+                    if (currentScreenContext.contains(targetWord) && !hasPerformedTestClick) {
+                        Log.d("AgentBrain", "🧠 המוח זיהה את המילה '$targetWord'! מרים טלפון לידיים...")
+
+                        // קריאה דרך ה-Companion Object ישירות לפונקציית הלחיצה של הנגישות!
+                        val isClickSuccessful = AgentAccessibilityService.instance?.clickOnText(targetWord)
+
+                        if (isClickSuccessful == true) {
+                            Log.d("AgentBrain", "✅ פקודת הלחיצה בוצעה בהצלחה!")
+                            hasPerformedTestClick = true // מסמנים שלחצנו כדי לא ללחוץ שוב ושוב
+                        } else {
+                            Log.d("AgentBrain", "❌ המוח נתן פקודה, אבל הידיים לא הצליחו ללחוץ.")
+                        }
+                    }
+                    // ----------------------------------------------
+                    else {
+                        Log.d("AgentBrain", "המוח לא קיבל מידע חדש מהמסך.")
+                    }
 
                     // שלב 2: prompt = build_prompt(state)
                     // val prompt = buildPrompt(state)
